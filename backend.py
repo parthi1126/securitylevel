@@ -18,15 +18,14 @@ scope = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-# --- Google Credentials from ENV ---
-creds_json = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON")
-if not creds_json:
-    raise Exception("Missing GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable")
+# --- Load Google Credentials from secret file ---
+with open("/etc/secrets/service_account.json", "r") as f:
+    creds_dict = json.load(f)
 
-creds_dict = json.loads(creds_json)
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-
 client = gspread.authorize(creds)
+
+# Open your Google Sheet
 sheet = client.open_by_key("1hyoQZpD17tsTjSh1XqgAUvfZ4Nt3kwV7zxphosruXeE").worksheet("Sheet1")
 
 # === Routes ===
@@ -90,7 +89,7 @@ def otp():
 
                 qr_img = qrcode.make(uri)
                 buffered = BytesIO()
-                qr_img.save(buffered, format="PNG")
+                qr_img.save(buffered)  # Removed format="PNG" to fix error
                 qr_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
                 return render_template("otp.html", email=email, qr_base64=qr_base64)
