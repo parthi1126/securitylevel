@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: epicallayouts
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: ""
+    startCommand: python backend.py
+    envVars:
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        value: service_account.json

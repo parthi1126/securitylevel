@@ -1,0 +1,29 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Environment files and credentials
+.env
+service_account.json
+credentials.json
+client_secret.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Flask debug file
+instance/
+
+# VS Code settings (optional)
+.vscode/
+
+# Log files
+*.log
+
+# Compiled or temporary files
+*.bak
+*.swp
+*.tmp
