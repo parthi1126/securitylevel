@@ -17,7 +17,15 @@ scope = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
 ]
-creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
+import json
+
+creds_json = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+if not creds_json:
+    raise Exception("Missing GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable")
+
+creds_dict = json.loads(creds_json)
+creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+
 client = gspread.authorize(creds)
 sheet = client.open_by_key("1hyoQZpD17tsTjSh1XqgAUvfZ4Nt3kwV7zxphosruXeE").worksheet("Sheet1")
 
