@@ -6,6 +6,3 @@ services:
     plan: free
     buildCommand: ""
     startCommand: python backend.py
-    envVars:
-      - key: GOOGLE_APPLICATION_CREDENTIALS
-        value: service_account.json

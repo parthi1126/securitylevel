@@ -4,9 +4,9 @@ from oauth2client.service_account import ServiceAccountCredentials
 import pyotp
 import qrcode
 import base64
-from io import BytesIO  # ✅ This line is required
+from io import BytesIO
 import os
-
+import json
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -17,8 +17,8 @@ scope = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
 ]
-import json
 
+# --- Google Credentials from ENV ---
 creds_json = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON")
 if not creds_json:
     raise Exception("Missing GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable")
@@ -29,12 +29,11 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 sheet = client.open_by_key("1hyoQZpD17tsTjSh1XqgAUvfZ4Nt3kwV7zxphosruXeE").worksheet("Sheet1")
 
-# === Route: Home/Login Page ===
+# === Routes ===
 @app.route("/")
 def index():
     return render_template("login.html")
 
-# === Route: Login Auth Check ===
 @app.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -42,13 +41,13 @@ def login():
     password = data.get("password")
 
     all_data = sheet.get_all_values()
-    headers = all_data[1]  # Assuming headers are on 2nd row
+    headers = all_data[1]
     email_col = headers.index("EmailAddress") + 1
     password_col = headers.index("Password") + 1
     secret_col = headers.index("SecretKey") + 1
     blocked_col = headers.index("Blocked") + 1
 
-    for i, row in enumerate(all_data[2:], start=3):  # Skip first 2 header rows
+    for i, row in enumerate(all_data[2:], start=3):
         try:
             if row[email_col - 1] == email:
                 if row[password_col - 1] != password:
@@ -58,7 +57,6 @@ def login():
 
                 session["email"] = email
 
-                # Check and assign secret key
                 secret = row[secret_col - 1].strip()
                 if not secret:
                     new_secret = pyotp.random_base32()
@@ -68,9 +66,6 @@ def login():
             continue
 
     return jsonify({"success": False, "message": "Email not found"})
-
-# === Route: Show OTP Page ===
-import base64
 
 @app.route("/otp")
 def otp():
@@ -93,7 +88,6 @@ def otp():
                 totp = pyotp.TOTP(secret)
                 uri = totp.provisioning_uri(name=email, issuer_name="ELPL Employee Portal")
 
-                # Generate QR code as base64
                 qr_img = qrcode.make(uri)
                 buffered = BytesIO()
                 qr_img.save(buffered, format="PNG")
@@ -105,10 +99,6 @@ def otp():
 
     return "User not found", 404
 
-
-
-
-# === Route: Verify OTP ===
 @app.route("/verify-otp", methods=["POST"])
 def verify_otp():
     if "email" not in session:
@@ -126,14 +116,8 @@ def verify_otp():
         if row[email_col - 1] == email:
             secret = row[secret_col - 1].strip()
             if pyotp.TOTP(secret).verify(otp_entered):
-                return "✅ Login Successful: Two-step verification completed!"
+                return render_template("success.html", email=email)
             else:
                 return "❌ Invalid OTP. Please try again."
 
     return "User not found", 404
-
-
-# === Start the Server ===
-if __name__ == "__main__":
-    app.run(debug=True)
-
